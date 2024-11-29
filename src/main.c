@@ -1,8 +1,9 @@
-#include <SDL3/SDL.h>
 #include "display.h"
+#include <SDL3/SDL.h>
 
 bool running = false;
-uint32_t background_color = 0xff181818;
+uint32_t background_color = 0xfff2f2f2;
+uint32_t foreground_color = 0xff181818;
 
 void check_events(void) {
 	SDL_Event event;
@@ -18,6 +19,7 @@ void check_events(void) {
 void render(void) {
 	render_color_buffer();
 	clear_color_buffer(background_color);
+	draw_rectangle(50, 50, 50, 50, foreground_color);
 	SDL_RenderPresent(renderer);
 }
 

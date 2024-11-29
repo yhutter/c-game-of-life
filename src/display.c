@@ -62,7 +62,7 @@ bool init_display(void) {
 void clear_color_buffer(uint32_t color) {
 	for (int y = 0; y < window_height; y++) {
 		for (int x = 0; x < window_width; x++) {
-			color_buffer[(y * window_width) + x] = color;
+			draw_pixel(x, y, color);
 		}
 	}
 }
@@ -79,4 +79,21 @@ void render_color_buffer(void) {
 		NULL,
 		NULL
 	);
+}
+
+void draw_pixel(int x, int y, uint32_t color) {
+	if (x < 0 || x > window_width || y < 0 || y > window_height) {
+		return;
+	}
+	color_buffer[(y * window_width) + x] = color;
+}
+
+void draw_rectangle(int x, int y, int w, int h, uint32_t color) {
+	for (int i = 0; i < w; i++) {
+		for (int j = 0; j < h; j++) {
+			int curr_x = i + x;
+			int curr_y = j + y;
+			draw_pixel(curr_x, curr_y, color);
+		}
+	}
 }
