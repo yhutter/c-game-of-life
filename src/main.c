@@ -1,12 +1,8 @@
-#include <stdio.h>
-
-
 #include <SDL3/SDL.h>
-#include <SDL3/SDL_main.h>
-
 #include "display.h"
 
 bool running = false;
+uint32_t background_color = 0xff181818;
 
 void check_events(void) {
 	SDL_Event event;
@@ -19,18 +15,20 @@ void check_events(void) {
 	}
 }
 
-void clean_up(void) {
-	SDL_DestroyRenderer(renderer);
-	SDL_DestroyWindow(window);
-	SDL_Quit();
+void render(void) {
+	render_color_buffer();
+	clear_color_buffer(background_color);
+	SDL_RenderPresent(renderer);
 }
 
+
 int main(void) {
-	running = init_window();
+	running = init_display();
 	while (running) {
 		check_events();
+		render();
 	}
-	clean_up();
+	destroy_display();
 	return 0;
 }
 

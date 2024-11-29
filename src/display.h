@@ -5,7 +5,13 @@
 
 extern SDL_Window *window;
 extern SDL_Renderer *renderer;
+extern SDL_Texture *color_buffer_texture;
+extern uint32_t *color_buffer;
+extern int window_width;
+extern int window_height;
 
-bool init_window(void);
-
+bool init_display(void);
+void destroy_display(void);
+void clear_color_buffer(uint32_t color);
+void render_color_buffer(void);
 #endif // DISPLAY_H
