@@ -9,8 +9,6 @@ SDL_Renderer *renderer = NULL;
 SDL_Texture *color_buffer_texture = NULL;
 uint32_t *color_buffer = NULL;
 
-int window_width = 1280;
-int window_height = 720;
 
 void destroy_display(void) {
 	free(color_buffer);
@@ -26,7 +24,7 @@ bool init_display(void) {
 		return false;
 	}
 
-	window = SDL_CreateWindow("Game of Life", window_width, window_height, 0);
+	window = SDL_CreateWindow("Game of Life", WINDOW_WIDTH, WINDOW_HEIGHT, 0);
 	if (window == NULL) {
 		fprintf(stderr, "Failed to create Window: %s\n", SDL_GetError());
 		return false;
@@ -42,8 +40,8 @@ bool init_display(void) {
 		renderer,
 		SDL_PIXELFORMAT_ARGB8888,
 		SDL_TEXTUREACCESS_STREAMING,
-		window_width,
-		window_height
+		WINDOW_WIDTH,
+		WINDOW_HEIGHT	
 	);
 
 	if (color_buffer_texture == NULL) {
@@ -51,7 +49,7 @@ bool init_display(void) {
 		return false;
 	}
 
-	color_buffer = (uint32_t*) malloc(window_width * window_height * sizeof(uint32_t));
+	color_buffer = (uint32_t*) malloc(WINDOW_WIDTH * WINDOW_HEIGHT * sizeof(uint32_t));
 	if (color_buffer == NULL) {
 		fprintf(stderr, "Failed to create color buffer\n");
 		return false;
@@ -60,8 +58,8 @@ bool init_display(void) {
 }
 
 void clear_color_buffer(uint32_t color) {
-	for (int y = 0; y < window_height; y++) {
-		for (int x = 0; x < window_width; x++) {
+	for (int y = 0; y < WINDOW_HEIGHT; y++) {
+		for (int x = 0; x < WINDOW_WIDTH; x++) {
 			draw_pixel(x, y, color);
 		}
 	}
@@ -72,7 +70,7 @@ void render_color_buffer(void) {
 		color_buffer_texture,
 		NULL,
 		color_buffer,
-		(int) window_width * sizeof(uint32_t));
+		(int) WINDOW_WIDTH * sizeof(uint32_t));
 	SDL_RenderTexture(
 		renderer,
 		color_buffer_texture,
@@ -82,10 +80,10 @@ void render_color_buffer(void) {
 }
 
 void draw_pixel(int x, int y, uint32_t color) {
-	if (x < 0 || x > window_width || y < 0 || y > window_height) {
+	if (x < 0 || x > WINDOW_WIDTH || y < 0 || y > WINDOW_HEIGHT) {
 		return;
 	}
-	color_buffer[(y * window_width) + x] = color;
+	color_buffer[(y * WINDOW_WIDTH) + x] = color;
 }
 
 void draw_rectangle(int x, int y, int w, int h, uint32_t color) {
@@ -94,6 +92,16 @@ void draw_rectangle(int x, int y, int w, int h, uint32_t color) {
 			int curr_x = i + x;
 			int curr_y = j + y;
 			draw_pixel(curr_x, curr_y, color);
+		}
+	}
+}
+
+void draw_grid(int grid_size, uint32_t color) {
+	for (int y = 0; y < WINDOW_HEIGHT; y++) {
+		for (int x = 0; x < WINDOW_WIDTH; x++) {
+			if (x % grid_size == 0 || y % grid_size == 0) {
+				draw_pixel(x, y, color);
+			}
 		}
 	}
 }
