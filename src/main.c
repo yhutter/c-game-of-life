@@ -10,6 +10,8 @@
 #define CELL_DEAD  0
 #define DRAWING 0
 #define RUNNING 1 
+#define FPS 60
+#define WAIT_TIME (1000/FPS)
 
 bool running = false;
 uint32_t background_color = 0xff11111b;
@@ -208,6 +210,7 @@ int main(void) {
 		check_events();
 		update();
 		render();
+		SDL_Delay(WAIT_TIME);
 	}
 	destroy_cells();
 	destroy_display();
