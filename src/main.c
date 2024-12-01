@@ -2,7 +2,7 @@
 #include <SDL3/SDL.h>
 #include <stdlib.h>
 
-#define CELL_SIZE 16
+#define CELL_SIZE 16 
 #define NUM_CELLS_X  (WINDOW_WIDTH / CELL_SIZE)
 #define NUM_CELLS_Y  (WINDOW_HEIGHT / CELL_SIZE)
 #define NUM_CELLS_TOTAL  (NUM_CELLS_X * NUM_CELLS_Y)
@@ -18,19 +18,23 @@ uint32_t cell_dead_color = 0xff11111b;
 uint32_t cell_alive_color = 0xffbac2de;
 
 typedef struct GameState {
-	uint8_t *cells;
+	uint8_t *current_cells;
+	uint8_t *old_cells;
 	uint8_t mode;
 } GameState;
 
 GameState state = { 
-	.cells = NULL,
+	.current_cells = NULL,
+	.old_cells = NULL,
 	.mode = DRAWING
 };
 
 
 void init_cells(void) {
-	state.cells = malloc(NUM_CELLS_TOTAL * sizeof(uint8_t));
-	memset(state.cells, CELL_DEAD, NUM_CELLS_TOTAL * sizeof(uint8_t));
+	state.current_cells = malloc(NUM_CELLS_TOTAL * sizeof(uint8_t));
+	state.old_cells = malloc(NUM_CELLS_TOTAL * sizeof(uint8_t));
+	memset(state.current_cells, CELL_DEAD, NUM_CELLS_TOTAL * sizeof(uint8_t));
+	memset(state.old_cells, CELL_DEAD, NUM_CELLS_TOTAL * sizeof(uint8_t));
 }
 
 uint32_t cell_index_from_mouse(float mouse_x, float mouse_y) {
@@ -40,7 +44,86 @@ uint32_t cell_index_from_mouse(float mouse_x, float mouse_y) {
 	return cell_index;
 }
 
-void update_cells(void) {
+uint32_t count_living_neighbours(int index, uint8_t *cells) {
+	// [ ] [ ] [ ]
+	// ^
+	// top_row_start
+	// [ ] [x] [ ]
+	// ^
+	// middle_row_start
+	// [ ] [ ] [ ]
+	// ^
+	// bottom_row_start
+
+	size_t top_row_start= index - NUM_CELLS_X - 1;
+	size_t middle_row_start = index - 1;
+	size_t bottom_row_start = index + NUM_CELLS_X - 1;
+	uint32_t living_neighbours = 0;
+
+	// Check top row
+	for (int i = 0; i < 3; i++) {
+		size_t index_to_check = top_row_start + i;
+		if (index_to_check < 0 || index_to_check > NUM_CELLS_TOTAL) {
+			continue;
+		}
+		if (cells[index_to_check] == CELL_ALIVE) {
+			living_neighbours++;
+		}
+	}
+	// Check middle row
+	for (int i = 0; i < 3; i++) {
+		size_t index_to_check = middle_row_start + i;
+		if (index_to_check < 0 || index_to_check > NUM_CELLS_TOTAL || index_to_check == index) {
+			continue;
+		}
+		if (cells[index_to_check] == CELL_ALIVE) {
+			living_neighbours++;
+		}
+	}
+	// Check bottom row
+	for (int i = 0; i < 3; i++) {
+		size_t index_to_check = bottom_row_start + i;
+		if (index_to_check < 0 || index_to_check > NUM_CELLS_TOTAL) {
+			continue;
+		}
+		if (cells[index_to_check] == CELL_ALIVE) {
+			living_neighbours++;
+		}
+	}
+	return living_neighbours;
+}
+
+void update_cells() {
+	// Copy current into old
+	memcpy(state.old_cells, state.current_cells, NUM_CELLS_TOTAL * sizeof(uint8_t));
+	for (int i = 0; i < NUM_CELLS_TOTAL; i++) {
+		uint32_t neighbours = count_living_neighbours(i, state.old_cells);
+		uint8_t cell_state = state.old_cells[i];
+		if (cell_state == CELL_ALIVE) {
+			// 1. Any life cell with fewer then 2 neighbours dies.
+			if (neighbours < 2) {
+				cell_state = CELL_DEAD;
+			}
+			// 2. Any life cell with two or three neighbours lives.
+			else if (neighbours == 2 || neighbours == 3) {
+				cell_state = CELL_ALIVE;
+			}
+			// 3. Any life cell with more then three neighbour dies.
+			else {
+				cell_state = CELL_DEAD;
+			}
+
+		} else {
+			// 4. Any dead cell with exactly three live neighbours becomes alive again.
+			if (neighbours == 3) {
+				cell_state = CELL_ALIVE;
+			}
+		}
+		state.current_cells[i] = cell_state;
+	}
+}
+
+void update(void) {
 	// Keep track of mouse position when in drawing mode.
 	if (state.mode == DRAWING) {
 		float mouse_x;
@@ -48,19 +131,22 @@ void update_cells(void) {
 		SDL_MouseButtonFlags flags = SDL_GetMouseState(&mouse_x, &mouse_y);
 		if (flags & SDL_BUTTON_LMASK) {
 			uint32_t index = cell_index_from_mouse(mouse_x, mouse_y);
-			state.cells[index] = CELL_ALIVE;
+			state.current_cells[index] = CELL_ALIVE;
 		} else if (flags & SDL_BUTTON_RMASK) {
 			uint32_t index = cell_index_from_mouse(mouse_x, mouse_y);
-			state.cells[index] = CELL_DEAD;
+			state.current_cells[index] = CELL_DEAD;
 		}
+	} else {
+		// Running mode
+		update_cells();
 	}
 }
 
-void render_cells(void) {
+void render_cells(uint8_t *cells) {
 	for (int i = 0; i < NUM_CELLS_TOTAL; i++) {
 		int x = i % NUM_CELLS_X;
 		int y = i / NUM_CELLS_X;
-		uint32_t color = state.cells[i] == CELL_DEAD ? cell_dead_color : cell_alive_color;
+		uint32_t color = cells[i] == CELL_DEAD ? cell_dead_color : cell_alive_color;
 		draw_rectangle(
 			x * CELL_SIZE,
 			y * CELL_SIZE,
@@ -76,7 +162,8 @@ void render_cells(void) {
 }
 
 void destroy_cells(void) {
-	free(state.cells);
+	free(state.current_cells);
+	free(state.old_cells);
 }
 
 
@@ -109,8 +196,7 @@ void check_events(void) {
 void render(void) {
 	render_color_buffer();
 	clear_color_buffer(background_color);
-	update_cells();
-	render_cells();
+	render_cells(state.current_cells);
 	SDL_RenderPresent(renderer);
 }
 
@@ -120,6 +206,7 @@ int main(void) {
 	init_cells();
 	while (running) {
 		check_events();
+		update();
 		render();
 	}
 	destroy_cells();
