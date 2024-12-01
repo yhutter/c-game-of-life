@@ -13,6 +13,7 @@
 
 bool running = false;
 uint32_t background_color = 0xff11111b;
+uint32_t foreground_color = 0xffbac2de;
 uint32_t cell_dead_color = 0xff11111b;
 uint32_t cell_alive_color = 0xffbac2de;
 
@@ -44,9 +45,14 @@ void update_cells(void) {
 	if (state.mode == DRAWING) {
 		float mouse_x;
 		float mouse_y;
-		SDL_GetMouseState(&mouse_x, &mouse_y);
-		uint32_t index = cell_index_from_mouse(mouse_x, mouse_y);
-		state.cells[index] = CELL_ALIVE;
+		SDL_MouseButtonFlags flags = SDL_GetMouseState(&mouse_x, &mouse_y);
+		if (flags & SDL_BUTTON_LMASK) {
+			uint32_t index = cell_index_from_mouse(mouse_x, mouse_y);
+			state.cells[index] = CELL_ALIVE;
+		} else if (flags & SDL_BUTTON_RMASK) {
+			uint32_t index = cell_index_from_mouse(mouse_x, mouse_y);
+			state.cells[index] = CELL_DEAD;
+		}
 	}
 }
 
@@ -63,6 +69,10 @@ void render_cells(void) {
 			color
 		);
 	}
+	// Display grid to indicate that we are in drawing mode
+	if (state.mode == DRAWING) {
+		draw_grid(CELL_SIZE, foreground_color);
+	}
 }
 
 void destroy_cells(void) {
@@ -78,6 +88,20 @@ void check_events(void) {
 				running = false;
 				break;
 			}
+			case SDL_EVENT_KEY_DOWN: {
+				switch (event.key.key) {
+					case SDLK_D: {
+						// Toggle between running and drawing mode
+						if (state.mode == DRAWING) {
+							state.mode = RUNNING;
+						} else {
+							state.mode = DRAWING;
+						}
+						break;
+					}
+				}
+				break;
+			}
 		}
 	}
 }
@@ -87,7 +111,6 @@ void render(void) {
 	clear_color_buffer(background_color);
 	update_cells();
 	render_cells();
-	draw_grid(CELL_SIZE, background_color);
 	SDL_RenderPresent(renderer);
 }
 
