@@ -15,19 +15,21 @@
 #define WAIT_TIME (1000/FPS)
 
 bool running = false;
-uint32_t background_color = 0xff282828;
-uint32_t foreground_color = 0xffebdbb2;
+uint32_t background_color = 0xffe4e4ef;
+uint32_t foreground_color = 0xff181818;
 
 typedef struct game_state_t {
 	uint8_t *current_cells;
 	uint8_t *old_cells;
 	uint8_t mode;
+	bool show_grid;
 } game_state_t;
 
 game_state_t state = { 
 	.current_cells = NULL,
 	.old_cells = NULL,
-	.mode = DRAWING
+	.mode = DRAWING,
+	.show_grid = true
 };
 
 void init_cells(char* image_path) {
@@ -166,7 +168,7 @@ void render_cells(uint8_t *cells) {
 	for (int i = 0; i < NUM_CELLS_TOTAL; i++) {
 		int x = i % NUM_CELLS_X;
 		int y = i / NUM_CELLS_X;
-		uint32_t color = cells[i] == CELL_DEAD ? foreground_color : background_color;
+		uint32_t color = cells[i] == CELL_DEAD ? background_color : foreground_color;
 		draw_rectangle(
 			x * CELL_SIZE,
 			y * CELL_SIZE,
@@ -176,7 +178,7 @@ void render_cells(uint8_t *cells) {
 		);
 	}
 	// Display grid to indicate that we are in drawing mode
-	if (state.mode == DRAWING) {
+	if (state.mode == DRAWING && state.show_grid) {
 		draw_grid(CELL_SIZE, foreground_color);
 	}
 }
@@ -204,6 +206,10 @@ void check_events(void) {
 						} else {
 							state.mode = DRAWING;
 						}
+						break;
+					}
+					case SDLK_G: {
+						state.show_grid = !state.show_grid;
 						break;
 					}
 				}

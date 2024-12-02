@@ -19,7 +19,9 @@ In order to run the Executable simply launch it or type:
 make run
 ```
 
-You can press the `D` Key in order to toggle between `running` and `drawing` mode.
+## Controls
+- Press the `D` Key in order to toggle between `running` and `drawing` mode.
+- Press the `G` Key in order to toggle showing and hiding the grid.
 
 ## References
 
