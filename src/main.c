@@ -1,8 +1,9 @@
 #include "display.h"
 #include <SDL3/SDL.h>
+#include <SDL3_image/SDL_image.h>
 #include <stdlib.h>
 
-#define CELL_SIZE 16 
+#define CELL_SIZE 3 
 #define NUM_CELLS_X  (WINDOW_WIDTH / CELL_SIZE)
 #define NUM_CELLS_Y  (WINDOW_HEIGHT / CELL_SIZE)
 #define NUM_CELLS_TOTAL  (NUM_CELLS_X * NUM_CELLS_Y)
@@ -14,29 +15,46 @@
 #define WAIT_TIME (1000/FPS)
 
 bool running = false;
-uint32_t background_color = 0xff11111b;
-uint32_t foreground_color = 0xffbac2de;
-uint32_t cell_dead_color = 0xff11111b;
-uint32_t cell_alive_color = 0xffbac2de;
+uint32_t background_color = 0xff282828;
+uint32_t foreground_color = 0xffebdbb2;
 
-typedef struct GameState {
+typedef struct game_state_t {
 	uint8_t *current_cells;
 	uint8_t *old_cells;
 	uint8_t mode;
-} GameState;
+} game_state_t;
 
-GameState state = { 
+game_state_t state = { 
 	.current_cells = NULL,
 	.old_cells = NULL,
 	.mode = DRAWING
 };
 
-
-void init_cells(void) {
+void init_cells(char* image_path) {
 	state.current_cells = malloc(NUM_CELLS_TOTAL * sizeof(uint8_t));
 	state.old_cells = malloc(NUM_CELLS_TOTAL * sizeof(uint8_t));
 	memset(state.current_cells, CELL_DEAD, NUM_CELLS_TOTAL * sizeof(uint8_t));
-	memset(state.old_cells, CELL_DEAD, NUM_CELLS_TOTAL * sizeof(uint8_t));
+	if (image_path != NULL) {
+		SDL_Surface *image_surface = IMG_Load(image_path);
+		if (image_surface == NULL) {
+			fprintf(stderr, "Could not load image %s\n", SDL_GetError());
+		} else {
+			uint8_t *pixels = image_surface->pixels;
+			int width = image_surface->w;
+			int height = image_surface->h;
+			int bpp = 4;
+			for (int y = 0; y < height; y++) {
+				for (int x = 0; x < width; x++) {
+					size_t pixel_index = (y * image_surface->pitch) + x * bpp;
+					size_t cell_index = (y * NUM_CELLS_X) + x;
+					uint8_t pixel = pixels[pixel_index];
+					state.current_cells[cell_index] = pixel == 0 ? CELL_ALIVE : CELL_DEAD;
+				}
+			}
+			SDL_DestroySurface(image_surface);
+		}
+	}
+	memcpy(state.old_cells, state.current_cells, NUM_CELLS_TOTAL * sizeof(uint8_t));
 }
 
 uint32_t cell_index_from_mouse(float mouse_x, float mouse_y) {
@@ -148,7 +166,7 @@ void render_cells(uint8_t *cells) {
 	for (int i = 0; i < NUM_CELLS_TOTAL; i++) {
 		int x = i % NUM_CELLS_X;
 		int y = i / NUM_CELLS_X;
-		uint32_t color = cells[i] == CELL_DEAD ? cell_dead_color : cell_alive_color;
+		uint32_t color = cells[i] == CELL_DEAD ? foreground_color : background_color;
 		draw_rectangle(
 			x * CELL_SIZE,
 			y * CELL_SIZE,
@@ -205,7 +223,7 @@ void render(void) {
 
 int main(void) {
 	running = init_display();
-	init_cells();
+	init_cells("src/sako.png");
 	while (running) {
 		check_events();
 		update();

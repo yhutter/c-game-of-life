@@ -1,6 +1,9 @@
 # Executable
 game_of_life
 
+# MacOS
+*.DS_Store
+
 # Prerequisites
 *.d
 
