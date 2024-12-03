@@ -15,8 +15,8 @@
 #define WAIT_TIME (1000/FPS)
 
 bool running = false;
-uint32_t background_color = 0xffe4e4ef;
-uint32_t foreground_color = 0xff181818;
+uint32_t foreground_color = 0xff000000;
+uint32_t background_color = 0xffffffff;
 
 typedef struct game_state_t {
 	uint8_t *current_cells;
